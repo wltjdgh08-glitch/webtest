@@ -104,6 +104,32 @@ function expandCanvas() {
     ctx.strokeStyle = strokeColorInput.value;
 }
 
+// Zoom Logic
+let currentScale = 1;
+const zoomInBtn = document.getElementById('zoomIn');
+const zoomOutBtn = document.getElementById('zoomOut');
+
+function updateZoom() {
+    canvas.style.transform = `scale(${currentScale})`;
+    // Adjust layout to allow scrolling to the new zoomed size if needed
+    // But since transform doesn't affect layout flow by default, we might need to adjust margin or wrapper.
+    // For simple "zoom in place", just transform is enough, but scrollbars won't update to match visual size.
+    // To make scrollbars match, we can set margin-bottom/right or put canvas in a wrapper.
+    // MVP: simple transform.
+}
+
+zoomInBtn.addEventListener('click', () => {
+    currentScale += 0.1;
+    updateZoom();
+});
+
+zoomOutBtn.addEventListener('click', () => {
+    if (currentScale > 0.5) {
+        currentScale -= 0.1;
+        updateZoom();
+    }
+});
+
 // Touch support
 canvas.addEventListener('touchstart', (e) => {
     isDrawing = true;

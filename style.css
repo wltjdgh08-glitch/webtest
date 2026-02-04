@@ -21,14 +21,15 @@ body {
     color: var(--text-color);
     font-family: var(--font-family);
     min-height: 100vh;
-    overflow: hidden;
-    /* Prevent scrolling */
+    overflow: auto;
+    /* Re-enable scrolling */
 }
 
 #app {
     width: 100%;
     min-height: 100vh;
     position: relative;
+    overflow: visible;
 }
 
 /* Canvas */
@@ -37,6 +38,8 @@ body {
     width: 100%;
     /* Height will be controlled by JS */
     cursor: crosshair;
+    transform-origin: 0 0;
+    /* Zoom from top-left */
 }
 
 /* Toolbar */
