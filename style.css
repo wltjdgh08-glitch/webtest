@@ -20,17 +20,13 @@ body {
     background-color: var(--bg-color);
     color: var(--text-color);
     font-family: var(--font-family);
-    overflow: hidden;
-    /* Prevent scrolling */
-    height: 100vh;
-    display: flex;
-    justify-content: center;
-    align-items: center;
+    min-height: 100vh;
+    /* Removed overflow: hidden to allow scrolling */
 }
 
 #app {
     width: 100%;
-    height: 100%;
+    min-height: 100vh;
     position: relative;
 }
 
@@ -38,13 +34,14 @@ body {
 #drawing-board {
     display: block;
     width: 100%;
-    height: 100%;
+    /* Height will be controlled by JS */
     cursor: crosshair;
 }
 
 /* Toolbar */
 #toolbar {
-    position: absolute;
+    position: fixed;
+    /* Changed from absolute to fixed */
     bottom: 24px;
     left: 50%;
     transform: translateX(-50%);
@@ -59,6 +56,8 @@ body {
     gap: 24px;
     box-shadow: 0 4px 24px rgba(0, 0, 0, 0.3);
     transition: all 0.3s ease;
+    z-index: 1000;
+    /* Ensure it stays on top */
 }
 
 .tool-group {

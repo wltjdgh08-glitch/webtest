@@ -25,7 +25,7 @@ function resizeCanvas() {
 
 // Initial setup
 canvas.width = window.innerWidth;
-canvas.height = window.innerHeight;
+canvas.height = window.innerHeight * 1.5; // Start slightly larger
 
 // Drawing function
 const draw = (e) => {
@@ -37,31 +37,46 @@ const draw = (e) => {
 
     // Handle both mouse and touch events
     let clientX, clientY;
+    let pageX, pageY;
+
     if (e.type.includes('touch')) {
+        // For touch, we need to handle scroll offsets
         clientX = e.touches[0].clientX;
         clientY = e.touches[0].clientY;
-        // Prevent scrolling on touch
-        e.preventDefault();
+        pageX = e.touches[0].pageX;
+        pageY = e.touches[0].pageY;
+        // Prevent default only if we are drawing? 
+        // We might want to allow scrolling if using two fingers, but for now simplest is:
+        // If drawing, prevent scroll.
+        // e.preventDefault(); 
     } else {
         clientX = e.clientX;
         clientY = e.clientY;
+        pageX = e.pageX;
+        pageY = e.pageY;
     }
 
-    ctx.lineTo(clientX - canvas.offsetLeft, clientY - canvas.offsetTop);
+    // Use page coordinates relative to canvas
+    // canvas.offsetLeft is usually 0 if body has no margin
+    const x = pageX - canvas.offsetLeft;
+    const y = pageY - canvas.offsetTop;
+
+    ctx.lineTo(x, y);
     ctx.stroke();
     ctx.beginPath();
-    ctx.moveTo(clientX - canvas.offsetLeft, clientY - canvas.offsetTop);
+    ctx.moveTo(x, y);
 }
 
 // Event Listeners
 canvas.addEventListener('mousedown', (e) => {
     isDrawing = true;
+    ctx.beginPath(); // Start new path
     draw(e); // Allow dots
 });
 
 canvas.addEventListener('mouseup', () => {
     isDrawing = false;
-    ctx.beginPath(); // Reset path so next line doesn't connect
+    ctx.beginPath();
 });
 
 canvas.addEventListener('mouseout', () => {
@@ -70,6 +85,30 @@ canvas.addEventListener('mouseout', () => {
 });
 
 canvas.addEventListener('mousemove', draw);
+
+// Infinite Scroll Logic
+window.addEventListener('scroll', () => {
+    // Check if near bottom (within 200px)
+    if ((window.innerHeight + window.scrollY) >= document.body.offsetHeight - 200) {
+        expandCanvas();
+    }
+});
+
+function expandCanvas() {
+    // Save current content
+    const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+
+    // Increase height by 1000px
+    canvas.height += 1000;
+
+    // Restore content
+    ctx.putImageData(imageData, 0, 0);
+
+    // Restore context settings (they reset on resize)
+    ctx.lineWidth = lineWidthInput.value;
+    ctx.lineCap = 'round';
+    ctx.strokeStyle = strokeColorInput.value;
+}
 
 // Touch support
 canvas.addEventListener('touchstart', (e) => {
