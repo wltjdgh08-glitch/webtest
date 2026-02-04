@@ -35,31 +35,25 @@ const draw = (e) => {
     ctx.lineCap = 'round';
     ctx.strokeStyle = strokeColorInput.value;
 
-    // Handle both mouse and touch events
     let clientX, clientY;
-    let pageX, pageY;
 
     if (e.type.includes('touch')) {
-        // For touch, we need to handle scroll offsets
         clientX = e.touches[0].clientX;
         clientY = e.touches[0].clientY;
-        pageX = e.touches[0].pageX;
-        pageY = e.touches[0].pageY;
-        // Prevent default only if we are drawing? 
-        // We might want to allow scrolling if using two fingers, but for now simplest is:
-        // If drawing, prevent scroll.
-        // e.preventDefault(); 
+        // e.preventDefault(); // Optional: prevent scrolling while drawing
     } else {
         clientX = e.clientX;
         clientY = e.clientY;
-        pageX = e.pageX;
-        pageY = e.pageY;
     }
 
-    // Use page coordinates relative to canvas
-    // canvas.offsetLeft is usually 0 if body has no margin
-    const x = pageX - canvas.offsetLeft;
-    const y = pageY - canvas.offsetTop;
+    // Get exact canvas position and scale
+    const rect = canvas.getBoundingClientRect();
+    const scaleX = canvas.width / rect.width;
+    const scaleY = canvas.height / rect.height;
+
+    // Calculate correct X/Y relative to canvas bitmap
+    const x = (clientX - rect.left) * scaleX;
+    const y = (clientY - rect.top) * scaleY;
 
     ctx.lineTo(x, y);
     ctx.stroke();
