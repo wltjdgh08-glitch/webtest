@@ -21,7 +21,8 @@ body {
     color: var(--text-color);
     font-family: var(--font-family);
     min-height: 100vh;
-    /* Removed overflow: hidden to allow scrolling */
+    overflow: hidden;
+    /* Prevent scrolling */
 }
 
 #app {
