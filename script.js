@@ -37,11 +37,11 @@ const draw = (e) => {
 
     // Handle both mouse and touch events
     let clientX, clientY;
-    if(e.type.includes('touch')) {
+    if (e.type.includes('touch')) {
         clientX = e.touches[0].clientX;
         clientY = e.touches[0].clientY;
         // Prevent scrolling on touch
-        e.preventDefault(); 
+        e.preventDefault();
     } else {
         clientX = e.clientX;
         clientY = e.clientY;
@@ -103,6 +103,28 @@ window.addEventListener('resize', () => {
     // Simple approach: set new dimensions.
     // const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
     canvas.width = window.innerWidth;
-    canvas.height = window.innerHeight;
     // ctx.putImageData(imageData, 0, 0); // Restore content if simple crop
+});
+
+// Color Palette Logic
+const colorBtns = document.querySelectorAll('.color-btn');
+
+colorBtns.forEach(btn => {
+    btn.addEventListener('click', () => {
+        // Remove active class from all
+        colorBtns.forEach(b => b.classList.remove('active'));
+        // Add active class to clicked
+        btn.classList.add('active');
+
+        // Update color
+        const color = btn.getAttribute('data-color');
+        ctx.strokeStyle = color;
+        strokeColorInput.value = color; // Sync color picker
+    });
+});
+
+// Sync color picker change to highlight custom or deselect palette
+strokeColorInput.addEventListener('input', (e) => {
+    ctx.strokeStyle = e.target.value;
+    colorBtns.forEach(b => b.classList.remove('active'));
 });
