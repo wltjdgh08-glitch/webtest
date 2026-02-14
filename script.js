@@ -80,6 +80,27 @@ canvas.addEventListener('mouseout', () => {
 
 canvas.addEventListener('mousemove', draw);
 
+// Blending Logic
+let isBlending = false;
+const blendBtn = document.getElementById('blendBtn');
+
+if (blendBtn) {
+    blendBtn.addEventListener('click', () => {
+        isBlending = !isBlending;
+        blendBtn.classList.toggle('active');
+
+        if (isBlending) {
+            // Additive mixing for dark background (Red + Blue = Purple/Magenta)
+            ctx.globalCompositeOperation = 'screen';
+            ctx.globalAlpha = 0.7; // Slightly transparent to layer better
+        } else {
+            // Default covering mode
+            ctx.globalCompositeOperation = 'source-over';
+            ctx.globalAlpha = 1.0;
+        }
+    });
+}
+
 // Infinite Scroll Logic
 window.addEventListener('scroll', () => {
     // Check if near bottom (within 200px)

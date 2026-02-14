@@ -40,6 +40,8 @@ body {
     cursor: crosshair;
     transform-origin: 0 0;
     /* Zoom from top-left */
+    touch-action: none;
+    /* Critical for tablets: disables browser gestures */
 }
 
 /* Toolbar */
@@ -168,8 +170,11 @@ input[type="range"]::-webkit-slider-thumb:hover {
     border: 1px solid var(--toolbar-border);
 }
 
-.btn-secondary:hover {
+.btn-secondary:hover,
+.btn-secondary.active {
     background-color: var(--secondary-bg);
+    border-color: var(--primary-color);
+    color: var(--primary-color);
 }
 
 /* Responsive */
