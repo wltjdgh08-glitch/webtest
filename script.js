@@ -94,7 +94,7 @@ function continueStroke(e) {
         }
         ctx.save();
         ctx.globalCompositeOperation = 'screen';
-        ctx.globalAlpha = 1.0;
+        ctx.globalAlpha = 0.55; // Lower = darker mixing
         ctx.drawImage(offscreen, 0, 0);
         ctx.restore();
     } else {
@@ -116,7 +116,7 @@ function endStroke() {
         }
         ctx.save();
         ctx.globalCompositeOperation = 'screen';
-        ctx.globalAlpha = 1.0;
+        ctx.globalAlpha = 0.55; // Lower = darker mixing
         ctx.drawImage(offscreen, 0, 0);
         ctx.restore();
         offCtx.clearRect(0, 0, offscreen.width, offscreen.height);
