@@ -15,7 +15,25 @@
     <div id="app">
         <canvas id="drawing-board"></canvas>
 
+        <div id="game-ui" class="hidden">
+            <div class="score-board">Score: <span id="score">0</span></div>
+            <button id="exit-game" class="btn btn-secondary">Exit Game</button>
+        </div>
+
         <div id="toolbar">
+            <div class="tool-group">
+                <button id="startGameBtn" class="btn btn-primary"
+                    style="background: linear-gradient(135deg, #FF6B6B, #FF8E53); border:none;">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"
+                        stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <polygon points="5 3 19 12 5 21 5 3"></polygon>
+                    </svg>
+                    Play
+                </button>
+            </div>
+
+            <div class="divider"></div>
+
             <div class="color-palette">
                 <button class="color-btn" data-color="#000000" style="background-color: #000000;"></button>
                 <button class="color-btn" data-color="#ef4444" style="background-color: #ef4444;"></button>

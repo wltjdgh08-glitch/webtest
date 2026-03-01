@@ -10,116 +10,158 @@ const saveBtn = document.getElementById('save');
 
 // State
 let isDrawing = false;
-let startX = 0;
-let startY = 0;
+
+// Offscreen canvas for per-stroke rendering (to fix blend inconsistency)
+const offscreen = document.createElement('canvas');
+const offCtx = offscreen.getContext('2d');
+
+// Blending state
+let isBlending = false;
 
 // Canvas setup
-function resizeCanvas() {
-    canvas.width = window.innerWidth;
-    canvas.height = window.innerHeight;
-    // Re-context setup after resize might be needed if we want to redraw, 
-    // but for a simple whiteboard, resizing usually clears content. 
-    // To preserve content, we'd need to save it to an image/buffer and restore.
-    // For this MVP, let's accept that resize clears canvas or just init once.
-}
-
-// Initial setup
 canvas.width = window.innerWidth;
-canvas.height = window.innerHeight * 1.5; // Start slightly larger
+canvas.height = window.innerHeight * 1.5;
+offscreen.width = canvas.width;
+offscreen.height = canvas.height;
 
-// Drawing function
-const draw = (e) => {
-    if (!isDrawing) return;
-
-    ctx.lineWidth = lineWidthInput.value;
-    ctx.lineCap = 'round';
-    ctx.strokeStyle = strokeColorInput.value;
-
+// --- Helper: Get canvas coordinates from event ---
+function getCanvasPos(e) {
+    const rect = canvas.getBoundingClientRect();
+    const scaleX = canvas.width / rect.width;
+    const scaleY = canvas.height / rect.height;
     let clientX, clientY;
-
     if (e.type.includes('touch')) {
         clientX = e.touches[0].clientX;
         clientY = e.touches[0].clientY;
-        // e.preventDefault(); // Optional: prevent scrolling while drawing
     } else {
         clientX = e.clientX;
         clientY = e.clientY;
     }
-
-    // Get exact canvas position and scale
-    const rect = canvas.getBoundingClientRect();
-    const scaleX = canvas.width / rect.width;
-    const scaleY = canvas.height / rect.height;
-
-    // Calculate correct X/Y relative to canvas bitmap
-    const x = (clientX - rect.left) * scaleX;
-    const y = (clientY - rect.top) * scaleY;
-
-    ctx.lineTo(x, y);
-    ctx.stroke();
-    ctx.beginPath();
-    ctx.moveTo(x, y);
+    return {
+        x: (clientX - rect.left) * scaleX,
+        y: (clientY - rect.top) * scaleY
+    };
 }
 
-// Event Listeners
-canvas.addEventListener('mousedown', (e) => {
+// --- Drawing Logic ---
+// In blend mode: draw on offscreen canvas, composite to main on stroke end
+// In normal mode: draw directly on main canvas
+
+function startStroke(e) {
     isDrawing = true;
-    ctx.beginPath(); // Start new path
-    draw(e); // Allow dots
-});
+    const pos = getCanvasPos(e);
 
-canvas.addEventListener('mouseup', () => {
+    if (isBlending) {
+        // Clear offscreen canvas for fresh stroke
+        offCtx.clearRect(0, 0, offscreen.width, offscreen.height);
+        offCtx.lineWidth = lineWidthInput.value;
+        offCtx.lineCap = 'round';
+        offCtx.lineJoin = 'round';
+        offCtx.strokeStyle = strokeColorInput.value;
+        offCtx.globalCompositeOperation = 'source-over';
+        offCtx.globalAlpha = 1.0;
+        offCtx.beginPath();
+        offCtx.moveTo(pos.x, pos.y);
+    } else {
+        ctx.lineWidth = lineWidthInput.value;
+        ctx.lineCap = 'round';
+        ctx.lineJoin = 'round';
+        ctx.strokeStyle = strokeColorInput.value;
+        ctx.globalCompositeOperation = 'source-over';
+        ctx.globalAlpha = 1.0;
+        ctx.beginPath();
+        ctx.moveTo(pos.x, pos.y);
+    }
+}
+
+function continueStroke(e) {
+    if (!isDrawing) return;
+    const pos = getCanvasPos(e);
+
+    if (isBlending) {
+        // Draw on offscreen canvas only (no accumulation within stroke)
+        offCtx.lineTo(pos.x, pos.y);
+        offCtx.stroke();
+        offCtx.beginPath();
+        offCtx.moveTo(pos.x, pos.y);
+
+        // Show preview: composite offscreen onto main canvas using 'screen'
+        // We display the full current state: background (main) + new stroke preview
+        // Note: We don't permanently write to main until mouseup
+        // To show live preview, we redraw main from a snapshot + offscreen
+        // For simplicity (no extra snapshot needed), we skip live preview accumulation
+        // and just let screen mode create the visual effect on mouseup
+    } else {
+        ctx.lineTo(pos.x, pos.y);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(pos.x, pos.y);
+    }
+}
+
+function endStroke() {
+    if (!isDrawing) return;
     isDrawing = false;
+
+    if (isBlending) {
+        // Composite offscreen stroke onto main canvas using 'screen' blend mode
+        // This prevents intra-stroke bleeding — the stroke is treated as ONE flat layer
+        ctx.save();
+        ctx.globalCompositeOperation = 'screen';
+        ctx.globalAlpha = 1.0;
+        ctx.drawImage(offscreen, 0, 0);
+        ctx.restore();
+        offCtx.clearRect(0, 0, offscreen.width, offscreen.height);
+    }
+
     ctx.beginPath();
+}
+
+// Mouse events
+canvas.addEventListener('mousedown', (e) => {
+    startStroke(e);
 });
-
-canvas.addEventListener('mouseout', () => {
-    isDrawing = false;
-    ctx.beginPath();
+canvas.addEventListener('mousemove', (e) => {
+    continueStroke(e);
 });
+canvas.addEventListener('mouseup', endStroke);
+canvas.addEventListener('mouseout', endStroke);
 
-canvas.addEventListener('mousemove', draw);
+// Touch events
+canvas.addEventListener('touchstart', (e) => {
+    e.preventDefault();
+    startStroke(e);
+}, { passive: false });
+canvas.addEventListener('touchmove', (e) => {
+    e.preventDefault();
+    continueStroke(e);
+}, { passive: false });
+canvas.addEventListener('touchend', (e) => {
+    e.preventDefault();
+    endStroke();
+}, { passive: false });
 
-// Blending Logic
-let isBlending = false;
+// Blend Mode Toggle
 const blendBtn = document.getElementById('blendBtn');
-
 if (blendBtn) {
     blendBtn.addEventListener('click', () => {
         isBlending = !isBlending;
         blendBtn.classList.toggle('active');
-
-        if (isBlending) {
-            // Additive mixing for dark background (Red + Blue = Purple/Magenta)
-            ctx.globalCompositeOperation = 'screen';
-            ctx.globalAlpha = 0.7; // Slightly transparent to layer better
-        } else {
-            // Default covering mode
-            ctx.globalCompositeOperation = 'source-over';
-            ctx.globalAlpha = 1.0;
-        }
     });
 }
 
 // Infinite Scroll Logic
 window.addEventListener('scroll', () => {
-    // Check if near bottom (within 200px)
     if ((window.innerHeight + window.scrollY) >= document.body.offsetHeight - 200) {
         expandCanvas();
     }
 });
 
 function expandCanvas() {
-    // Save current content
     const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-
-    // Increase height by 1000px
     canvas.height += 1000;
-
-    // Restore content
+    offscreen.height = canvas.height;
     ctx.putImageData(imageData, 0, 0);
-
-    // Restore context settings (they reset on resize)
     ctx.lineWidth = lineWidthInput.value;
     ctx.lineCap = 'round';
     ctx.strokeStyle = strokeColorInput.value;
@@ -132,44 +174,28 @@ const zoomOutBtn = document.getElementById('zoomOut');
 
 function updateZoom() {
     canvas.style.transform = `scale(${currentScale})`;
-    // Adjust layout to allow scrolling to the new zoomed size if needed
-    // But since transform doesn't affect layout flow by default, we might need to adjust margin or wrapper.
-    // For simple "zoom in place", just transform is enough, but scrollbars won't update to match visual size.
-    // To make scrollbars match, we can set margin-bottom/right or put canvas in a wrapper.
-    // MVP: simple transform.
+    canvas.style.transformOrigin = 'top left';
 }
 
 zoomInBtn.addEventListener('click', () => {
-    currentScale += 0.1;
+    currentScale = Math.min(currentScale + 0.1, 3.0);
     updateZoom();
 });
 
 zoomOutBtn.addEventListener('click', () => {
-    if (currentScale > 0.5) {
+    if (currentScale > 0.3) {
         currentScale -= 0.1;
         updateZoom();
     }
 });
 
-// Touch support
-canvas.addEventListener('touchstart', (e) => {
-    isDrawing = true;
-    draw(e);
-});
-canvas.addEventListener('touchend', () => {
-    isDrawing = false;
-    ctx.beginPath();
-});
-canvas.addEventListener('touchmove', draw);
-
-
-// Tools logic
+// Tools
 clearBtn.addEventListener('click', () => {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
+    offCtx.clearRect(0, 0, offscreen.width, offscreen.height);
 });
 
 saveBtn.addEventListener('click', () => {
-    // Create a temporary link to download
     const link = document.createElement('a');
     link.download = `my-drawing-${Date.now()}.png`;
     link.href = canvas.toDataURL();
@@ -178,33 +204,21 @@ saveBtn.addEventListener('click', () => {
 
 // Window resize handling
 window.addEventListener('resize', () => {
-    // Optional: Prompt user? or just resize? 
-    // Resizing clears the canvas in default HTML5 canvas behavior.
-    // Simple approach: set new dimensions.
-    // const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
     canvas.width = window.innerWidth;
-    // ctx.putImageData(imageData, 0, 0); // Restore content if simple crop
+    offscreen.width = canvas.width;
 });
 
 // Color Palette Logic
 const colorBtns = document.querySelectorAll('.color-btn');
-
 colorBtns.forEach(btn => {
     btn.addEventListener('click', () => {
-        // Remove active class from all
         colorBtns.forEach(b => b.classList.remove('active'));
-        // Add active class to clicked
         btn.classList.add('active');
-
-        // Update color
         const color = btn.getAttribute('data-color');
-        ctx.strokeStyle = color;
-        strokeColorInput.value = color; // Sync color picker
+        strokeColorInput.value = color;
     });
 });
 
-// Sync color picker change to highlight custom or deselect palette
 strokeColorInput.addEventListener('input', (e) => {
-    ctx.strokeStyle = e.target.value;
     colorBtns.forEach(b => b.classList.remove('active'));
 });
