@@ -17,6 +17,7 @@ const offCtx = offscreen.getContext('2d');
 
 // Blending state
 let isBlending = false;
+let snapshotData = null; // snapshot of canvas before stroke starts (for live preview)
 
 // Canvas setup
 canvas.width = window.innerWidth;
@@ -52,6 +53,8 @@ function startStroke(e) {
     const pos = getCanvasPos(e);
 
     if (isBlending) {
+        // Save snapshot of current canvas so we can restore for live preview
+        snapshotData = ctx.getImageData(0, 0, canvas.width, canvas.height);
         // Clear offscreen canvas for fresh stroke
         offCtx.clearRect(0, 0, offscreen.width, offscreen.height);
         offCtx.lineWidth = lineWidthInput.value;
@@ -79,18 +82,21 @@ function continueStroke(e) {
     const pos = getCanvasPos(e);
 
     if (isBlending) {
-        // Draw on offscreen canvas only (no accumulation within stroke)
+        // Draw on offscreen canvas
         offCtx.lineTo(pos.x, pos.y);
         offCtx.stroke();
         offCtx.beginPath();
         offCtx.moveTo(pos.x, pos.y);
 
-        // Show preview: composite offscreen onto main canvas using 'screen'
-        // We display the full current state: background (main) + new stroke preview
-        // Note: We don't permanently write to main until mouseup
-        // To show live preview, we redraw main from a snapshot + offscreen
-        // For simplicity (no extra snapshot needed), we skip live preview accumulation
-        // and just let screen mode create the visual effect on mouseup
+        // Live preview: restore snapshot, then composite offscreen on top
+        if (snapshotData) {
+            ctx.putImageData(snapshotData, 0, 0);
+        }
+        ctx.save();
+        ctx.globalCompositeOperation = 'screen';
+        ctx.globalAlpha = 1.0;
+        ctx.drawImage(offscreen, 0, 0);
+        ctx.restore();
     } else {
         ctx.lineTo(pos.x, pos.y);
         ctx.stroke();
@@ -104,14 +110,17 @@ function endStroke() {
     isDrawing = false;
 
     if (isBlending) {
-        // Composite offscreen stroke onto main canvas using 'screen' blend mode
-        // This prevents intra-stroke bleeding — the stroke is treated as ONE flat layer
+        // Final commit: restore snapshot and composite stroke cleanly
+        if (snapshotData) {
+            ctx.putImageData(snapshotData, 0, 0);
+        }
         ctx.save();
         ctx.globalCompositeOperation = 'screen';
         ctx.globalAlpha = 1.0;
         ctx.drawImage(offscreen, 0, 0);
         ctx.restore();
         offCtx.clearRect(0, 0, offscreen.width, offscreen.height);
+        snapshotData = null;
     }
 
     ctx.beginPath();
