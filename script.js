@@ -17,7 +17,7 @@ const offscreen = document.createElement('canvas');
 const offCtx = offscreen.getContext('2d');
 
 // Blending state
-let isBlending = true; // Default to true for the new mode
+let isBlending = false; // Default to false (normal mode)
 let snapshotData = null; // snapshot of canvas before stroke starts (for live preview)
 
 // Canvas setup
