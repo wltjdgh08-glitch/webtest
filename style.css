@@ -1,12 +1,12 @@
 :root {
-    --bg-color: #0f172a;
-    --toolbar-bg: rgba(30, 41, 59, 0.7);
-    --toolbar-border: rgba(255, 255, 255, 0.1);
-    --text-color: #f1f5f9;
+    --bg-color: #f8fafc;
+    --toolbar-bg: rgba(255, 255, 255, 0.8);
+    --toolbar-border: rgba(0, 0, 0, 0.1);
+    --text-color: #1e293b;
     --primary-color: #3b82f6;
     --primary-hover: #2563eb;
-    --secondary-bg: #334155;
-    --secondary-hover: #475569;
+    --secondary-bg: #e2e8f0;
+    --secondary-hover: #cbd5e1;
     --font-family: 'Inter', sans-serif;
 }
 
@@ -75,8 +75,13 @@ body {
 
 .tool-label {
     font-size: 0.75rem;
-    color: #94a3b8;
+    color: #64748b;
     font-weight: 500;
+}
+
+.tool-buttons {
+    display: flex;
+    gap: 8px;
 }
 
 /* Inputs */
